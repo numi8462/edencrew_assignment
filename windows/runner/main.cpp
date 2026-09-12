@@ -26,7 +26,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
-  Win32Window::Size size(1280, 720);
+  // Fixed to match the Figma mobile frame (393x852) for easier side-by-side
+  // comparison. Dev convenience only; has no effect on the mobile app.
+  Win32Window::Size size(393, 852);
   if (!window.Create(L"edencrew_assignment_starter", origin, size)) {
     return EXIT_FAILURE;
   }
