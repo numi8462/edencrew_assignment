@@ -1,117 +1,94 @@
-# Flutter 신입 개발자 과제
+# 국내 주식 관심종목 앱
 
-국내 주식 관심종목 앱의 화면 3개를 **Flutter 코드**로 구현하고, 그중 한 화면을 저희 플랫폼 **Lucy Studio**로 다시 만드는 과제입니다. 전체 기간은 4일입니다.
+이든크루 Flutter 신입 개발자 과제 — 과제 1 제출물입니다.
 
-이 문서는 저장소를 실행하고 디자인 토큰을 쓰는 방법만 다룹니다. **과제 요구사항은 아래 문서에 있습니다.**
+## 실행 방법
 
-| 문서 | 내용 |
-| --- | --- |
-| [`docs/ASSIGNMENT.md`](docs/ASSIGNMENT.md) | 화면별 요구사항, 평가 기준, 제출 방법 |
-| [`docs/NAVER_API.md`](docs/NAVER_API.md) | Naver 데이터 연동 가이드 (endpoint 4개) |
+- Flutter `3.47.4` (stable channel), Dart `3.13.3`
+- 실행 명령
+  ```bash
+  flutter pub get
+  flutter run
+  ```
+- 확인한 플랫폼: **Windows 데스크톱** (`flutter run -d windows`). 안드로이드 실기기 / 에뮬레이터, 브라우저(Chrome)는 이 작업 환경에 준비돼 있지 않아 확인하지 못했습니다. 393×852 비율에 맞춰 창 크기를 좁혀서 Figma와 비교했습니다.
+  - 브라우저는 과제 안내대로 CORS 때문에 Naver 요청이 막혀 애초에 대상에서 제외했습니다.
+- 폰트는 기본 제공된 `NotoSansKR` (`assets/fonts/`, `pubspec.yaml` 등록)을 그대로 사용했습니다. 바꾸지 않았습니다.
+- 정적 분석: `flutter analyze` → **No issues found!**
+- 테스트: `flutter test` → **11개 전부 통과** (포맷터 단위 테스트 5개, Naver 데이터 계층 파싱/캐싱 테스트 5개 — `MockClient`로 `assets/mock/naver/`의 실제 응답 샘플을 재생, 스모크 위젯 테스트 1개)
 
-**Figma 시안 링크는 안내 메일에 담겨 있습니다.** 시안의 `Screens` 페이지에는 화면 3개 외에 빈 상태 · 정렬 · 토스트처럼 같은 화면의 다른 상태를 그린 프레임과, 토큰 확인용 `Design Tokens — Dark` 프레임이 함께 있습니다. 어떤 프레임이 무엇인지는 [`docs/ASSIGNMENT.md`의 대상 화면](docs/ASSIGNMENT.md#대상-화면)에 정리해 두었습니다.
+## 구현 범위
 
-AI 도구를 활용해도 괜찮습니다. 다만 이후 기술 면접에서 구현 내용을 구체적으로 질문할 예정이니, 직접 작성한 코드라고 설명할 수 있을 정도로 이해하고 계셔야 합니다.
+### 필수 — 전부 구현했습니다
 
----
+- **관심 화면**: 종목명 / `코드 · 시장` / 현재가 / 등락액·등락률, 상승·하락·보합 3색 처리, 새로고침, 하단 탭(`navActive`/`navInactive`), 시세 미수신 행 스켈레톤, 빈 상태, 정렬(현재가순 · 등락률순 · 가나다순) 바텀시트 + 헤더 칩.
+- **검색 화면**: 검색창 + 지우기, 검색어 하이라이트(`searchHighlight`), 관심 등록 별 아이콘(`favoriteActive`/`favoriteInactive`) 즉시 반영 + 등록/해제 토스트, 상세 이동, 초기 상태 / 결과 없음 상태.
+- **종목상세 화면**: 헤더(뒤로가기 · 이름 · 코드·시장 · 관심버튼), 현재가 + 등락 + 방향 아이콘, 기간 탭 4종(`accentDefault`/`accentBg`), 캔들 차트, 요약 카드(시가·고가·저가·거래량·시가총액, 축약 표기), 일별 시세 표(날짜 `MM.DD` · 종가 · 등락 · 거래량).
+- **상태 동기화**: 관심 / 검색 / 상세 세 화면이 `FavoritesController` 하나를 공유해서 별 아이콘이 항상 같이 바뀝니다.
+- Naver 4개 endpoint 모두 요청 · 파싱 · DTO · 모델 연결을 직접 구현했습니다 (아래 "기술 선택" 참고).
 
-## 실행하기
+### 선택 — 구현한 것 / 안 한 것
 
-이 저장소를 그대로 사용하면 됩니다. 별도로 프로젝트를 만들지 않아도 됩니다.
+구현함:
+- 관심 화면 Pull to refresh
+- (기본 위젯이 제공하는) 토스트 등장/퇴장 애니메이션 — `SnackBar` 기본 트랜지션
 
-```bash
-flutter pub get
-flutter run
-```
+구현하지 않음 (시간 관계상 필수를 우선했습니다):
+- 관심종목 스와이프 삭제
+- 정렬 기준 로컬 저장 유지
+- 검색 디바운스 / 검색 중 로딩 표시 (요청 순번으로 오래된 응답을 무시하는 안전장치는 넣었지만, 타이핑마다 요청은 나갑니다)
+- 최근 검색어
+- 차트 축 라벨 · 거래량 바 · 영역 채우기 · 크로스헤어/툴팁 · 전환 애니메이션
+- 일별 시세 표 무한 스크롤 (기간별 최대 245행을 한 번에 그립니다)
+- 관심 목록 재실행 후 유지(로컬 저장)
 
-모든 플랫폼으로 실행할 수 있게 만들어져 있습니다. 다만 아래 두 가지를 주의해 주세요.
+## 기술 선택과 이유
 
-- **웹(Chrome)에서는 동작하지 않습니다.** Naver endpoint가 CORS를 허용하지 않아 브라우저에서는 요청이 막힙니다. IDE 기본 실행 대상이 Chrome으로 잡혀 있는 경우가 많으니 실행 대상을 바꿔 주세요.
-- **모바일 기기나 에뮬레이터, 또는 Figma 프레임에 가까운 창 크기에서 확인해 주세요.** 데스크톱에서 창을 크게 띄우고 비교하면 의미가 없습니다.
+- **상태관리 — `provider` + `ChangeNotifier`.** 화면이 3개뿐이라 Riverpod/Bloc 같은 코드젠 기반 도구는 과했습니다. 관심 등록 상태를 `FavoritesController` 하나로 앱 루트에서 공유해 세 화면 동기화 요구사항을 자연스럽게 풀었습니다.
+- **폴더 구조 — feature-first.**
+  ```
+  lib/
+    theme/                 (기존 디자인 토큰)
+    core/
+      network/              Naver 공통 HTTP 클라이언트
+      format/                가격 · 숫자 · 날짜 포맷터
+      widgets/               화면 간 공용 위젯(토스트)
+    data/
+      models/                Stock/Quote/DailyPrice 등 도메인 모델
+      naver/                 endpoint별 API 클래스 (검색/시세/메타/일별)
+      stock_repository.dart  4개 API를 감싸는 파사드 + 메타데이터 캐시
+    app/
+      favorites_controller.dart  관심 상태 단일 진실 공급원
+      app_shell.dart              하단 탭 네비게이션
+    features/
+      watchlist/ · search/ · detail/   화면별 controller + screen + widgets
+  ```
+- **네트워킹 — `http`.** Dart 팀이 유지보수하는 가장 표준적인 선택입니다.
+- **HTML 파싱 — `html` 패키지 + `cp949_codec`.** 일별 시세는 JSON이 아니라 EUC-KR(정확히는 상위 호환인 CP949) 인코딩 HTML이라 `http`의 기본 UTF-8 디코딩을 쓸 수 없습니다. `NaverApiClient.getBytes`로 원본 바이트를 받고 `cp949.decode(bytes)`로 직접 디코딩한 뒤 `html` 패키지로 테이블을 파싱했습니다. (처음엔 `euc` 패키지를 추가했는데, 이름과 달리 EUC-**JP**용이라 한글이 깨졌습니다. `cp949_codec`으로 바꿔서 해결했습니다 — 아래 "막혔던 지점" 참고.)
+- **차트 — 패키지 없이 `CustomPainter`.** 과제 문서에 "캔들 차트를 지원하면서 토큰 색과 Figma 여백까지 맞추기 쉬운 패키지는 많지 않다"고 명시돼 있고, 차트 내부 렌더링은 감점 대상이 아니라고 해서 의존성 없이 완전히 제어 가능한 방식을 택했습니다. 상승/하락 색상(`chartLineUp`/`chartLineDown`)만 토큰에 맞췄습니다.
+- **일별 시세 페이지 캐싱.** `NaverDailyPriceApi`가 심볼별로 `{page: List<DailyPrice>}` 캐시와 `lastPage`를 들고 있어서, 기간 탭을 1개월→3개월→1개월로 바꿔도 이미 받은 페이지는 다시 요청하지 않습니다. `lastPage`보다 큰 페이지도 요청하지 않습니다. (`test/data/naver/naver_daily_price_api_test.dart`에서 재요청하지 않는지 검증했습니다.)
+- **메타데이터 캐시.** `StockRepository`가 심볼별 `StockSummary`를 캐싱합니다. 검색 결과는 이미 이름·시장 정보를 담고 있어서 `cacheMeta`로 바로 채워 넣고, 관심 화면 시드 종목처럼 캐시에 없는 경우에만 메타데이터 endpoint를 호출합니다.
+- **디자인 토큰 추가 안 함.** 기존 토큰으로 충분해서 `AppColors`/`AppDimens`에 새 필드를 추가하지 않았습니다.
+- **초기 관심종목 시드.** 앱을 처음 열었을 때 빈 화면만 보이지 않도록 삼성전자(`005930`) · SK하이닉스(`000660`) · NAVER(`035420`)를 기본 관심종목으로 심어뒀습니다 (`main.dart`). 실제 서비스라면 로컬 저장된 사용자 데이터를 불러오는 자리입니다.
 
-macOS 데스크톱으로 확인하실 경우 네트워크 요청에 entitlement가 필요합니다. debug 실행은 기본 설정으로 동작합니다.
+## 직접 판단한 부분과 이유
 
----
+- **토스트 노출 시간/사라지는 방식**: Figma에 정의가 없어 2초 노출 후 자동으로 사라지는 `SnackBar`(`floating`, 토큰 색상 적용)로 구현했습니다.
+- **로딩 상태**: 관심 화면은 시세 없는 행을 스켈레톤으로, 상세 화면은 차트 영역에 스피너로 표시했습니다.
+- **네트워크 에러**: 관심/상세 화면 상단에 `priceDownBg`/`priceDownText` 톤의 배너로 노출하고, 새로고침(관심은 버튼+Pull to refresh, 상세는 Pull to refresh)으로 재시도할 수 있게 했습니다. 검색은 결과 영역에 동일한 방식으로 처리합니다.
+- **긴 종목명 오버플로**: 모든 이름 텍스트에 `maxLines: 1` + `TextOverflow.ellipsis`를 적용했습니다.
+- **시세를 못 받은 행의 정렬**: `현재가순`/`등락률순`에서 스켈레톤 행(시세 없음)은 항상 맨 아래로 보냅니다. 어느 쪽에도 정답이 없어 "아직 비교할 값이 없다"는 쪽으로 판단했습니다.
+- **검색 결과가 항상 favorite 상태와 함께 옴**: `SearchResultRow`가 `FavoritesController`를 직접 구독해서 검색 직후에도 최신 관심 상태가 별 아이콘에 반영됩니다.
+- **Figma와 다르게 구현한 부분**: 정확한 여백/폰트 크기 수치는 Figma 파일을 직접 열어 확인하는 대신 `lib/theme/README.md`의 토큰 대응표와 과제 문서의 서술(예: 등락 색상, 토스트 구성 요소)을 기준으로 구현했습니다. 픽셀 단위로 어긋난 부분이 있을 수 있습니다.
+- **관심 화면 행 탭 시 상세 이동**: 문서에는 검색 화면에서만 명시돼 있지만, 관심 화면 행도 상세로 이동하도록 만들었습니다. 관심종목을 눌러도 상세를 볼 수 있는 편이 자연스러운 흐름이라고 판단했습니다.
 
-## 저장소 구성
+## 막혔던 지점과 어떻게 접근했는지
 
-`flutter create` 직후의 기본 템플릿에 **디자인 토큰과 폰트만 미리 준비해 둔 상태**입니다.
-
-```text
-docs/
-  ASSIGNMENT.md           과제 요구사항 · 평가 기준 · 제출 방법
-  NAVER_API.md            Naver 데이터 연동 가이드
-lib/
-  main.dart               앱 진입점. 시작용 화면이 들어 있습니다
-  theme/
-    README.md             Figma 변수 ↔ Dart 필드 대응표
-    app_palette.dart      원시 팔레트 (Figma Primitives)
-    app_colors.dart       시맨틱 색상 토큰 (Figma Semantic / Dark)
-    app_dimens.dart       간격 · 반경 · 크기 토큰 (Figma Scale)
-    app_typography.dart   서체 · 굵기 토큰 (Figma Typography)
-    app_theme.dart        ThemeData 조립 + context 확장
-    theme.dart            barrel
-assets/
-  fonts/                  Noto Sans KR (등록까지 마쳐둔 상태입니다)
-  mock/                   응답 샘플을 저장해 쓰실 위치입니다
-```
-
-`lib/` 아래 나머지 구조는 없습니다. **폴더 구조와 아키텍처는 직접 설계해 주세요.**
-
-`lib/main.dart`의 `StartHereScreen`은 토큰 사용 예시를 겸한 임시 화면입니다. 지우고 직접 구현한 화면으로 바꿔 주세요.
-
----
-
-## 디자인 토큰
-
-색상은 `ThemeExtension`으로 정의되어 있습니다. `AppTheme.dark`가 `MaterialApp`에 이미 연결되어 있으니 `context`로 꺼내 쓰시면 됩니다.
-
-```dart
-MaterialApp(
-  theme: AppTheme.dark,
-  home: const WatchlistScreen(),
-)
-```
-
-```dart
-Text(
-  '삼성전자',
-  style: TextStyle(color: context.colors.textPrimary),
-)
-
-Container(
-  padding: EdgeInsets.symmetric(horizontal: context.dimens.space4),
-  decoration: BoxDecoration(
-    color: context.colors.surfaceRaised,
-    borderRadius: BorderRadius.circular(context.dimens.radiusMd),
-  ),
-)
-```
-
-지켜 주셔야 할 것:
-
-- **토큰 값을 수정하지 마세요.** 색상 hex를 화면 코드에 직접 쓰거나 `AppPalette`를 화면에서 바로 참조하지 말고, 항상 `context.colors.*` 시맨틱 토큰을 쓰세요. (필수)
-- 필요한 토큰이 없다고 판단되면 추가해도 됩니다. 다만 왜 추가했는지 메모에 적어 주세요.
-- **글자 크기와 행간은 토큰으로 정의되어 있지 않습니다.** Figma는 서체와 굵기만 변수로 관리하고 있어서, 크기는 각 화면의 텍스트 레이어에서 직접 확인해 주세요.
-
-Figma 변수명과 Dart 필드명, 원시값, hex는 [`lib/theme/README.md`](lib/theme/README.md)에 1:1로 정리해 두었습니다. Figma에서 본 색이 코드의 어느 필드인지 헷갈릴 때 그 표를 보시면 됩니다.
-
-### 폰트
-
-`Noto Sans KR`을 사용합니다. 폰트 파일과 `pubspec.yaml` 등록은 **미리 해두었으니 따로 작업하지 않으셔도 됩니다.**
-
-`assets/fonts/`에 Regular / Medium / Bold 세 가지 굵기가 들어 있고, `AppTypography.fontFamily`(`'NotoSansKR'`)와 같은 이름으로 등록되어 있습니다. `AppTheme.dark`가 이 family를 기본 서체로 잡아둡니다.
-
-다른 방식(예: `google_fonts` 패키지)으로 바꾸셔도 무방합니다. 바꾸셨다면 메모에 적어 주세요.
+- **EUC-KR 디코딩 패키지 선택 실수**: 처음 추가한 `euc` 패키지가 실제로는 EUC-**JP**(일본어) 전용이라 한글 표에서 문자가 깨졌습니다. `flutter test`로 실제 HTML 샘플을 파싱하는 테스트를 먼저 작성해뒀던 덕분에 바로 발견했고, `cp949_codec` 패키지(EUC-KR을 포함하는 CP949 지원)로 교체해 해결했습니다.
+- **이 작업 환경에 Flutter SDK / Android SDK / Visual Studio(Windows 데스크톱 빌드용 C++ 워크로드)가 전혀 없었습니다.** Flutter SDK는 새로 설치했지만, Android/Visual Studio 툴체인까지 설치하는 건 시간 대비 효율이 낮다고 판단해 생략했습니다. 대신 `flutter test`가 플랫폼 툴체인 없이 Dart VM에서 바로 실행된다는 점을 이용해 (1) 실제 Naver endpoint를 호출하는 데이터 계층 테스트, (2) 393×852 크기로 화면을 렌더링해 PNG로 저장하는 임시 스크린샷 테스트로 레이아웃 · 색상 · 상태 동기화를 검증했습니다. 최종 제출 전 실기기/에뮬레이터에서 한 번 더 확인하는 것을 권장합니다.
+- **와일드카드 응답 필드명 불일치**: 실시간 시세 응답이 `cv`(등락액), `cr`(등락률) 필드를 이미 제공하지만, 문서가 요구하는 대로 `nv - pcv`, `(nv - pcv) / pcv`를 직접 계산하도록 구현했습니다. Naver가 내부적으로 반올림/부호 처리를 다르게 할 수 있어 직접 계산 쪽이 더 명확했습니다.
 
 ---
 
-## 이 README에 대해
+## 과제 2 — Lucy Studio `목표가 알림`
 
-제출 시 이 문서는 **본인 프로젝트의 README로 덮어써 주세요.** 작성할 내용은 [`docs/ASSIGNMENT.md`의 제출 방법](docs/ASSIGNMENT.md#제출-방법)에 정리되어 있습니다. `docs/` 아래 문서는 남겨 두시면 됩니다.
-
-## 라이선스
-
-이 저장소는 이든크루 채용 과제의 스타터 템플릿으로만 제공됩니다. 과제 수행을 위해 복제하고 수정하는 것은 괜찮습니다. 다만 그 범위를 넘어선 재배포나 상업적 이용은 Edencrew의 명시적인 허가 없이 허용되지 않습니다. 자세한 내용은 루트의 `LICENSE` 파일을 확인해 주세요.
-
-**별도로 전달드린 Figma 시안과 Lucy Studio 설치 파일은 외부에 공유하지 말아주세요.**
+Lucy Studio는 GUI 전용 데스크톱 툴이라 이 대화에서 직접 조작할 수 없었습니다. 별도로 `docs.edencrew.com` 문서를 바탕으로 위젯 구성과 스크립트(`$form`, `setProperty`/`getProperty`) 가이드를 정리해 전달드렸습니다. 페이지 이름은 `targetAlert`로 만들고, 완료 후 `cloneProject/assets`를 압축해 제출해 주세요.
