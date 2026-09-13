@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../app/favorites_controller.dart';
 import '../../core/format/price_format.dart';
 import '../../core/widgets/app_icon.dart';
+import '../../core/widgets/skeleton_bar.dart';
 import '../../data/models/stock_summary.dart';
 import '../../data/stock_repository.dart';
 import '../../theme/theme.dart';
@@ -169,7 +170,9 @@ class _Body extends StatelessWidget {
               ? const _ChartLoading()
               : CandleChart(prices: controller.dailyPrices),
           SizedBox(height: dimens.space5),
-          if (controller.quote != null) SummaryCard(quote: controller.quote!),
+          controller.quote == null
+              ? const SummaryCardSkeleton()
+              : SummaryCard(quote: controller.quote!),
           SizedBox(height: dimens.space5),
           Text(
             '일별 시세',
@@ -208,7 +211,17 @@ class _PriceBlock extends StatelessWidget {
     final quote = controller.quote;
 
     if (quote == null) {
-      return const SizedBox(height: 64, child: Center(child: CircularProgressIndicator()));
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
+          const SkeletonBar(width: 120, height: 28),
+          SizedBox(width: dimens.space2),
+          Padding(
+            padding: EdgeInsets.only(bottom: dimens.space1),
+            child: const SkeletonBar(width: 96, height: 16),
+          ),
+        ],
+      );
     }
 
     final Color color = switch (quote.direction) {
@@ -222,22 +235,28 @@ class _PriceBlock extends StatelessWidget {
       PriceDirection.flat => Icons.remove,
     };
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         Text(
           formatPrice(quote.currentPrice),
           style: TextStyle(color: colors.textPrimary, fontSize: 28, fontWeight: AppTypography.bold),
         ),
-        SizedBox(height: dimens.space1),
-        Row(
-          children: <Widget>[
-            Icon(arrow, color: color, size: dimens.iconMd),
-            Text(
-              formatChange(quote.changeAmount, quote.changeRate),
-              style: TextStyle(color: color, fontSize: 14, fontWeight: AppTypography.medium),
-            ),
-          ],
+        SizedBox(width: dimens.space2),
+        Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(arrow, color: color, size: dimens.iconMd),
+              Flexible(
+                child: Text(
+                  formatChange(quote.changeAmount, quote.changeRate),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: color, fontSize: 14, fontWeight: AppTypography.medium),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
