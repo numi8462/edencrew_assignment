@@ -35,7 +35,7 @@ class AppToast {
             children: <Widget>[
               Icon(
                 isFavorite ? Icons.star : Icons.star_border,
-                color: colors.favoriteActive,
+                color: isFavorite ? colors.favoriteActive : colors.favoriteInactive,
                 size: dimens.iconMd,
               ),
               SizedBox(width: dimens.space2),
