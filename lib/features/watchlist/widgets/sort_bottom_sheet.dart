@@ -22,13 +22,17 @@ class SortBottomSheet extends StatelessWidget {
     final AppColors colors = context.colors;
     final AppDimens dimens = context.dimens;
 
-    return SafeArea(
-      child: Container(
-        margin: EdgeInsets.all(dimens.space4),
-        decoration: BoxDecoration(
-          color: colors.surfaceRaised,
-          borderRadius: BorderRadius.circular(dimens.radiusLg),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: colors.surfaceRaised,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(dimens.radiusLg),
+          topRight: Radius.circular(dimens.radiusLg),
         ),
+      ),
+      child: SafeArea(
+        top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -37,11 +41,11 @@ class SortBottomSheet extends StatelessWidget {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  '정렬 기준',
+                  '정렬',
                   style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: AppTypography.medium,
+                    color: colors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: AppTypography.bold,
                   ),
                 ),
               ),
@@ -82,13 +86,13 @@ class _SortOptionTile extends StatelessWidget {
               child: Text(
                 sort.label,
                 style: TextStyle(
-                  color: selected ? colors.accentDefault : colors.textPrimary,
+                  color: selected ? colors.textPrimary : colors.textSecondary,
                   fontSize: 15,
-                  fontWeight: selected ? AppTypography.medium : AppTypography.regular,
+                  fontWeight: selected ? AppTypography.bold : AppTypography.regular,
                 ),
               ),
             ),
-            if (selected) Icon(Icons.check, color: colors.accentDefault, size: dimens.iconMd),
+            if (selected) Icon(Icons.check, color: colors.textPrimary, size: dimens.iconMd),
           ],
         ),
       ),
