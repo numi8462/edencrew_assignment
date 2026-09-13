@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/format/price_format.dart';
+import '../../../core/widgets/skeleton_bar.dart';
 import '../../../data/models/quote.dart';
 import '../../../data/models/stock_summary.dart';
 import '../../../theme/theme.dart';
@@ -117,64 +118,21 @@ class _PriceColumn extends StatelessWidget {
   }
 }
 
-class _PriceSkeleton extends StatefulWidget {
+class _PriceSkeleton extends StatelessWidget {
   const _PriceSkeleton();
 
   @override
-  State<_PriceSkeleton> createState() => _PriceSkeletonState();
-}
-
-class _PriceSkeletonState extends State<_PriceSkeleton> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final AppColors colors = context.colors;
     final AppDimens dimens = context.dimens;
 
-    return FadeTransition(
-      opacity: _controller.drive(Tween<double>(begin: 0.4, end: 1)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          _SkeletonBar(width: 64, height: 16, color: colors.feedbackSkeleton, dimens: dimens),
-          SizedBox(height: dimens.space1),
-          _SkeletonBar(width: 88, height: 12, color: colors.feedbackSkeleton, dimens: dimens),
-        ],
-      ),
-    );
-  }
-}
-
-class _SkeletonBar extends StatelessWidget {
-  const _SkeletonBar({
-    required this.width,
-    required this.height,
-    required this.color,
-    required this.dimens,
-  });
-
-  final double width;
-  final double height;
-  final Color color;
-  final AppDimens dimens;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(dimens.radiusSm)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        const SkeletonBar(width: 64, height: 16),
+        SizedBox(height: dimens.space1),
+        const SkeletonBar(width: 88, height: 12),
+      ],
     );
   }
 }
